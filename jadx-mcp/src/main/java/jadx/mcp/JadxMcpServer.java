@@ -17,8 +17,13 @@ import jadx.mcp.tools.GetMethodCodeTool;
 import jadx.mcp.tools.GetResourceTool;
 import jadx.mcp.tools.ListClassesTool;
 import jadx.mcp.tools.ListMethodsTool;
+import jadx.mcp.tools.ListRenamesTool;
 import jadx.mcp.tools.ListResourcesTool;
 import jadx.mcp.tools.LoadFileTool;
+import jadx.mcp.tools.RemoveRenameTool;
+import jadx.mcp.tools.RenameClassTool;
+import jadx.mcp.tools.RenameFieldTool;
+import jadx.mcp.tools.RenameMethodTool;
 import jadx.mcp.tools.SearchClassesTool;
 import jadx.mcp.tools.SearchMethodsTool;
 
@@ -45,16 +50,30 @@ public class JadxMcpServer {
 	}
 
 	private static void registerTools(McpSyncServer server, JadxMcpContext context) {
+		// File operations
 		server.addTool(LoadFileTool.create(context));
 		server.addTool(GetFileInfoTool.create(context));
+
+		// Class/Method browsing
 		server.addTool(ListClassesTool.create(context));
 		server.addTool(GetClassCodeTool.create(context));
 		server.addTool(ListMethodsTool.create(context));
 		server.addTool(GetMethodCodeTool.create(context));
+
+		// Search
 		server.addTool(SearchClassesTool.create(context));
 		server.addTool(SearchMethodsTool.create(context));
+
+		// Resources
 		server.addTool(ListResourcesTool.create(context));
 		server.addTool(GetResourceTool.create(context));
+
+		// Rename/Alias
+		server.addTool(RenameClassTool.create(context));
+		server.addTool(RenameMethodTool.create(context));
+		server.addTool(RenameFieldTool.create(context));
+		server.addTool(ListRenamesTool.create(context));
+		server.addTool(RemoveRenameTool.create(context));
 	}
 
 	public static McpSchema.CallToolResult successResult(String message) {
