@@ -24,6 +24,7 @@ import jadx.mcp.tools.RemoveRenameTool;
 import jadx.mcp.tools.RenameClassTool;
 import jadx.mcp.tools.RenameFieldTool;
 import jadx.mcp.tools.RenameMethodTool;
+import jadx.mcp.tools.RenameVariableTool;
 import jadx.mcp.tools.SearchClassesTool;
 import jadx.mcp.tools.SearchMethodsTool;
 
@@ -72,6 +73,7 @@ public class JadxMcpServer {
 		server.addTool(RenameClassTool.create(context));
 		server.addTool(RenameMethodTool.create(context));
 		server.addTool(RenameFieldTool.create(context));
+		server.addTool(RenameVariableTool.create(context));
 		server.addTool(ListRenamesTool.create(context));
 		server.addTool(RemoveRenameTool.create(context));
 	}
