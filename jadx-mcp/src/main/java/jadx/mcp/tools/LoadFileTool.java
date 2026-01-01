@@ -10,7 +10,7 @@ import jadx.mcp.JadxMcpServer;
 
 public class LoadFileTool {
 	private static final String TOOL_NAME = "jadx_load_file";
-	private static final String DESCRIPTION = "Load an APK, DEX, JAR, or AAB file for decompilation";
+	private static final String DESCRIPTION = "Load an APK, DEX, JAR, AAB, or .jadx project file for decompilation";
 	private static final String SCHEMA = "{"
 			+ "\"type\": \"object\","
 			+ "\"properties\": {"

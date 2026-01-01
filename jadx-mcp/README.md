@@ -99,3 +99,4 @@ Claude Code에서 다음과 같이 사용할 수 있습니다:
 - AAR (Android Archive)
 - JAR (Java Archive)
 - XAPK, APKM, APKS (Split APK 형식)
+- **.jadx** (jadx-gui 프로젝트 파일 - 기존 rename 정보 포함)

@@ -22,6 +22,8 @@ dependencies {
 	// MCP SDK
 	implementation("io.modelcontextprotocol.sdk:mcp:0.10.0")
 
+	implementation("com.google.code.gson:gson:2.13.2")
+
 	implementation("ch.qos.logback:logback-classic:1.5.22")
 }
 

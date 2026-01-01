@@ -1,6 +1,10 @@
 package jadx.mcp;
 
 import java.io.File;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,6 +13,11 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import jadx.api.JadxArgs;
 import jadx.api.JadxDecompiler;
 import jadx.api.JavaClass;
@@ -16,6 +25,7 @@ import jadx.api.JavaField;
 import jadx.api.JavaMethod;
 import jadx.api.ResourceFile;
 import jadx.api.data.ICodeRename;
+import jadx.api.data.IJavaCodeRef;
 import jadx.api.data.IJavaNodeRef;
 import jadx.api.data.impl.JadxCodeData;
 import jadx.api.data.impl.JadxCodeRef;
@@ -24,6 +34,9 @@ import jadx.api.data.impl.JadxNodeRef;
 import jadx.api.impl.NoOpCodeCache;
 import jadx.plugins.tools.JadxExternalPluginsLoader;
 
+import static jadx.core.utils.GsonUtils.defaultGsonBuilder;
+import static jadx.core.utils.GsonUtils.interfaceReplace;
+
 public class JadxMcpContext {
 	private JadxDecompiler decompiler;
 	private String loadedFilePath;
@@ -31,6 +44,12 @@ public class JadxMcpContext {
 	private Set<ICodeRename> renames;
 
 	public synchronized void loadFile(String path) {
+		// Check if this is a .jadx project file
+		if (path.endsWith(".jadx")) {
+			loadProjectFile(path);
+			return;
+		}
+
 		close();
 
 		codeData = new JadxCodeData();
@@ -47,6 +66,70 @@ public class JadxMcpContext {
 		decompiler = new JadxDecompiler(args);
 		decompiler.load();
 		loadedFilePath = path;
+	}
+
+	public synchronized void loadProjectFile(String projectPath) {
+		close();
+
+		Path path = Path.of(projectPath);
+		Path basePath = path.toAbsolutePath().getParent();
+
+		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+			Gson gson = defaultGsonBuilder()
+					.registerTypeAdapter(ICodeRename.class, interfaceReplace(JadxCodeRename.class))
+					.registerTypeAdapter(IJavaNodeRef.class, interfaceReplace(JadxNodeRef.class))
+					.registerTypeAdapter(IJavaCodeRef.class, interfaceReplace(JadxCodeRef.class))
+					.create();
+
+			JsonObject projectData = gson.fromJson(reader, JsonObject.class);
+
+			// Extract input files
+			List<File> inputFiles = new ArrayList<>();
+			JsonArray filesArray = projectData.getAsJsonArray("files");
+			if (filesArray != null) {
+				for (JsonElement elem : filesArray) {
+					String filePath = elem.getAsString();
+					Path resolved = basePath.resolve(filePath).normalize();
+					inputFiles.add(resolved.toFile());
+				}
+			}
+
+			if (inputFiles.isEmpty()) {
+				throw new IllegalStateException("No input files found in project");
+			}
+
+			// Extract code data (renames, comments)
+			codeData = new JadxCodeData();
+			JsonObject codeDataJson = projectData.getAsJsonObject("codeData");
+			if (codeDataJson != null) {
+				JsonArray renamesArray = codeDataJson.getAsJsonArray("renames");
+				if (renamesArray != null) {
+					List<ICodeRename> renameList = new ArrayList<>();
+					for (JsonElement elem : renamesArray) {
+						ICodeRename rename = gson.fromJson(elem, ICodeRename.class);
+						renameList.add(rename);
+					}
+					codeData.setRenames(renameList);
+				}
+			}
+
+			renames = new HashSet<>(codeData.getRenames());
+
+			JadxArgs args = new JadxArgs();
+			args.setInputFiles(inputFiles);
+			args.setCodeCache(new NoOpCodeCache());
+			args.setPluginLoader(new JadxExternalPluginsLoader());
+			args.setSkipResources(false);
+			args.setSkipSources(false);
+			args.setCodeData(codeData);
+
+			decompiler = new JadxDecompiler(args);
+			decompiler.load();
+			loadedFilePath = projectPath;
+
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to load project file: " + e.getMessage(), e);
+		}
 	}
 
 	public boolean isLoaded() {
